@@ -8,7 +8,7 @@ module.exports = (app) => {
     // GitHub API calls. This will return:
     //   {owner: 'yourname', repo: 'yourrepo', number: 123, body: 'Hello World!}
     //When referring to the event used context.payload
-    app.log(context.payload.issue.title)
+    app.log(context.payload.issue.title);
     
     var params = context.issue({body: context.payload.issue.title})
     
@@ -21,18 +21,19 @@ module.exports = (app) => {
     
     //var test = context.payload.issue.title
     
-    var newObject = JSON.parse(JSON.stringify(context.payload.issue.title));
+    //Parse the returned Github response to string - in this instance we only want the issue title
+    var issueTitleObject = JSON.parse(JSON.stringify(context.payload.issue.title))
     
-    if(newObject.includes('Unexpected early end of program.'))
+    if(issueTitleObject.includes('Unexpected early end of program.'))
     {
       /*In here we need to write an explanation to what this error is and then paste said
         explanation as the new parameter for the comment
       */
-      var testing = newObject
-      var tellAnswer = testing.split(':')[1]
-      tellAnswer = tellAnswer.split(',')[0]
+      var testing = issueTitleObject
+      var getErrorLine = testing.split(':')[1]
+      getErrorLine = getErrorLine.split(',')[0]
       
-      var potentialSolution = "If an unexpected early end of program has occured, it is very likely that you may have missed a semi-colon at the end of a variable. Please have another look at " + tellAnswer + " and see if you have missed a semi-colon."
+      var potentialSolution = "If an unexpected early end of program has occured, it is very likely that you may have missed a semi-colon at the end of a variable. Please have another look at " + getErrorLine + " and see if you have missed a semi-colon."
       var newParams = context.issue({body: potentialSolution})
       return context.github.issues.createComment(newParams)
     }
