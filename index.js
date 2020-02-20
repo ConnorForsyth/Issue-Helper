@@ -14,7 +14,7 @@ module.exports = (app) => {
     
     //First we need to get the payload, then take the title, compare it with generic errors
     //if no match, use stack exchange
-    
+    //need to find the most generic errors that are simple fixes - ranges from missing semi-colons to incomplete declarations such as var thisVar = and leaving it empty
     
     
     
