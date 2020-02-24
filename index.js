@@ -1,9 +1,12 @@
+
 module.exports = (app) => {
   // Your code here
+  
   app.log('Yay! The app was loaded!')
 
   // example of probot responding 'Hello World' to a new issue being opened
   app.on('issues.opened', async context => {
+    
     // `context` extracts information from the event, which can be passed to
     // GitHub API calls. This will return:
     //   {owner: 'yourname', repo: 'yourrepo', number: 123, body: 'Hello World!}
@@ -33,13 +36,34 @@ module.exports = (app) => {
       var getErrorLine = testing.split(':')[1]
       getErrorLine = getErrorLine.split(',')[0]
       
-      var potentialSolution = "If an unexpected early end of program has occured, it is very likely that you may have missed a semi-colon at the end of a variable. Please have another look at " + getErrorLine + " and see if you have missed a semi-colon."
+      var potentialSolution = "If an unexpected early end of program has occured, it is very likely that you may have started creating a new variable and have forgotten to assign it a value. Please have another look at " + getErrorLine + " and see if you have missed a semi-colon."
       var newParams = context.issue({body: potentialSolution})
       return context.github.issues.createComment(newParams)
     }
     else
     {    
       // Post a comment on the issue
+      //Now we want to connect to stack exchange api and pass the parameters
+      const stackexchange = require('stackexchange')
+      const options = {version:2.2}
+      
+      var testContext = new stackexchange(options)
+      
+      var filter = {
+        pagesize:2,
+        tagged:'node.js',
+        order:'asc'
+      }
+      
+      filter.site = 'stackoverflow'
+      testContext.questions.questions(filter, function(err, results){
+        if(err)throw err
+        
+        console.log(results.items)
+        console.log(results.has_more)
+      })
+      
+     
       return context.github.issues.createComment(params)
     }
     
