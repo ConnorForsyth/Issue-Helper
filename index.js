@@ -44,27 +44,52 @@ module.exports = (app) => {
     {    
       // Post a comment on the issue
       //Now we want to connect to stack exchange api and pass the parameters
+      //Note if this is the first time running you will need to install the relevant packages on the server
+      //npm i ajv - requirement for stack exchange api
+      //npm install stackexchange --save - node package that lets us make requests to the stack exchange api
       const stackexchange = require('stackexchange')
       const options = {version:2.2}
       
       var testContext = new stackexchange(options)
       
+      //console.log(testContext)
+      
+      
+      //Now all we need to do now is simply paste their error message as a title
       var filter = {
-        pagesize:2,
-        tagged:'node.js',
+        pagesize:1,
+        title: issueTitleObject,
         order:'asc'
       }
       
-      filter.site = 'stackoverflow'
-      testContext.questions.questions(filter, function(err, results){
-        if(err)throw err
-        
-        console.log(results.items)
-        console.log(results.has_more)
-      })
+      //Need to filter our search specifically to stack overflow which is the site that answers programming questions
+      filter.site = 'stackoverflow'      
       
-     
-      return context.github.issues.createComment(params)
+      testContext.search.advanced(filter, function(err,results){
+        if(err) throw err
+        
+        //Lets have a look at what stackexchange returned
+        console.log(results.items)
+        
+        function isEmptyObject(obj) {
+          return !Object.keys(obj).length;
+        }
+        
+        if(isEmptyObject(results.items))
+        {
+          var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified [INSERT NAME HERE] and help should arrive shortly"    
+          var newParams = context.issue({body: changeResponse})
+          return context.github.issues.createComment(newParams)
+        }
+        
+        else
+        {
+          //Successful in retrieving an answer from stackoverflow - now need to compare questions - one with most points is used  
+        }
+        
+        
+      })
+
     }
     
   })
