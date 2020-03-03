@@ -98,8 +98,11 @@ module.exports = (app) => {
           var newParams = context.issue({body: changeResponse})
           //Need to get the assignees - maybe not necessarily the owner
           //return context.github.issues.assignee(organisationOwnerId)
-          app.log(context.payload)
-          return context.github.issues.createComment(newParams)
+          const tempParamB = context.issue()
+          app.log(tempParamB.owner)
+          const addAssigneeParams = context.issue({assignees: [tempParamB.owner]})
+          //return context.github.issues.addAssignees(addAssigneeParams)
+          return context.github.issues.createComment(newParams) + context.github.issues.addAssignees(addAssigneeParams)
           
         }
         
