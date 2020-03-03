@@ -1,12 +1,13 @@
 
 module.exports = (app) => {
-  // Your code here
+ 
   
   app.log('Yay! The app was loaded!')
 
   // example of probot responding 'Hello World' to a new issue being opened
   app.on('issues.opened', async context => {
     
+     var acceptedAnswerId
     // `context` extracts information from the event, which can be passed to
     // GitHub API calls. This will return:
     //   {owner: 'yourname', repo: 'yourrepo', number: 123, body: 'Hello World!}
@@ -56,11 +57,20 @@ module.exports = (app) => {
       
       
       //Now all we need to do now is simply paste their error message as a title
+      //When seriously testing please use var issueTitleObject
+      
+      /* Problem with the filtering in that it will be very likely that returned results could be duplicate questions
+         and if it is a duplicate question it is likely there is no relevant answer to the posted question  
+      */ 
       var filter = {
-        pagesize:1,
-        title: issueTitleObject,
+        pagesize: '20',
+        title: 'undefined in Javascript?',
+        accepted: 'True',
+        sort:'relevance',
         order:'asc'
       }
+      
+      
       
       //Need to filter our search specifically to stack overflow which is the site that answers programming questions
       filter.site = 'stackoverflow'      
@@ -69,7 +79,7 @@ module.exports = (app) => {
         if(err) throw err
         
         //Lets have a look at what stackexchange returned
-        console.log(results.items)
+        //console.log(results.items)
         
         function isEmptyObject(obj) {
           return !Object.keys(obj).length;
@@ -77,6 +87,9 @@ module.exports = (app) => {
         
         if(isEmptyObject(results.items))
         {
+          /* In the original post we should be able to retrieve the owner and the poster users, if they aren't the same we can tag the owner
+             who in this case will be the lecturer 
+          */
           var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified [INSERT NAME HERE] and help should arrive shortly"    
           var newParams = context.issue({body: changeResponse})
           return context.github.issues.createComment(newParams)
@@ -85,11 +98,55 @@ module.exports = (app) => {
         else
         {
           //Successful in retrieving an answer from stackoverflow - now need to compare questions - one with most points is used  
+          var count = Object.keys(results.items).length
+          //console.log(results.items)
+          
+          for(var i=0; i<count; i++)
+          {
+            
+            var topAnswers = []
+            var currentAnswerScore
+            var topScore            
+            var topAnswerId
+            
+            if(results.items[i].is_answered == true)
+            {                     
+                if(i == 0)
+                {
+                  topAnswerId = i 
+                  topScore = results.items[i].score
+                  console.log("Current highest score is: " + topScore + " at position: " + topAnswerId)
+                }
+                else
+                {
+                  //Compare answer scores and determine which is higher - previous or current
+                  currentAnswerScore = results.items[i].score
+                  //console.log("i equals: " + i)
+                  if(currentAnswerScore > topScore)
+                  {
+                    topAnswerId = i;
+                    topScore = currentAnswerScore;
+                    console.log("Current highest score is: " + topScore + " at position: " + topAnswerId)
+                  }
+                  //return context.github.issues.createComment(params)  
+                }
+                
+              
+            
+            }            
+            
+          }
+          //console.log(results.items[topAnswerId])
+          //Now we have the highest scoring answer which we will now retrieve
+          acceptedAnswerId = results.items[topAnswerId].accepted_answer_id
+          console.log(acceptedAnswerId)
+          
         }
         
         
-      })
-
+      })//End of stack overflow advanced search
+      
+      console.log("The accepted answer id is currently: " + acceptedAnswerId)
     }
     
   })
