@@ -12,8 +12,8 @@ module.exports = (app) => {
     // GitHub API calls. This will return:
     //   {owner: 'yourname', repo: 'yourrepo', number: 123, body: 'Hello World!}
     //When referring to the event used context.payload
-    app.log(context.payload.issue.title);
-    
+    var organisationOwnerId = context.payload.repository.owner.id;
+    var organisationOwner = context.payload.repository.owner.login;
     var params = context.issue({body: context.payload.issue.title})
     
     //First we need to get the payload, then take the title, compare it with generic errors
@@ -23,8 +23,7 @@ module.exports = (app) => {
     //hello.js: line 10, col 19, Unexpected early end of program.
     //potentially could have it look at the code as if it had access to it, could give read access - grab file name from error title and from there see what the offending line was
     
-    //var test = context.payload.issue.title
-    
+      
     //Parse the returned Github response to string - in this instance we only want the issue title
     var issueTitleObject = JSON.parse(JSON.stringify(context.payload.issue.title))
     
@@ -62,9 +61,13 @@ module.exports = (app) => {
       /* Problem with the filtering in that it will be very likely that returned results could be duplicate questions
          and if it is a duplicate question it is likely there is no relevant answer to the posted question  
       */ 
+      
+      
+      //undefined in Javascript?
+      
       var filter = {
         pagesize: '20',
-        title: 'undefined in Javascript?',
+        title: 'zzzzzzzzzzzzzzzzzzzQQQQQQQQQQQQAAAAA',
         accepted: 'True',
         sort:'relevance',
         order:'asc'
@@ -90,9 +93,14 @@ module.exports = (app) => {
           /* In the original post we should be able to retrieve the owner and the poster users, if they aren't the same we can tag the owner
              who in this case will be the lecturer 
           */
-          var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified [INSERT NAME HERE] and help should arrive shortly"    
+          //As the creator won't be the same as the owner i.e. the lecturer
+          var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified " + organisationOwner + " and help should arrive shortly"    
           var newParams = context.issue({body: changeResponse})
+          //Need to get the assignees - maybe not necessarily the owner
+          //return context.github.issues.assignee(organisationOwnerId)
+          app.log(context.payload)
           return context.github.issues.createComment(newParams)
+          
         }
         
         else
