@@ -67,11 +67,12 @@ module.exports = (app) => {
       //undefined in Javascript?
       //Need to add in the title as the question here to get a success
       var filter = {
-        pagesize: '20',
+        pagesize: '1',
         title: issueTitleObject,
         accepted: 'True',
         sort:'relevance',
-        order:'asc'
+        order:'asc',
+        withbody: 'true'
       }
       
       
@@ -131,6 +132,7 @@ module.exports = (app) => {
                 {
                   topAnswerId = i 
                   topScore = results.items[i].score
+                  
                   console.log("Current highest score is: " + topScore + " at position: " + topAnswerId)
                 }
                 else
@@ -156,6 +158,10 @@ module.exports = (app) => {
           //Now we have the highest scoring answer which we will now retrieve
           acceptedAnswerId = results.items[topAnswerId].accepted_answer_id
           //console.log(acceptedAnswerId)
+          
+          app.log(results.items[topAnswerId])
+          
+          
           getStackOverflowAnswer(acceptedAnswerId)
         }
         
@@ -192,8 +198,8 @@ module.exports = (app) => {
             var answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
             //app.log(answerResponse)
             var answerParams = context.issue({body: answerResponse})
-            app.log(answerParams)
-            return context.github.issues.createComment(answerParams)
+            //app.log(answerParams)
+            //return context.github.issues.createComment(answerParams)
         })
         
         
