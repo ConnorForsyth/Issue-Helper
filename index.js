@@ -1,12 +1,13 @@
 
 module.exports = (app) => {
  
+  //The depreciation octokit error message is an issue with the probot library that will be fixed in v10 
   
   app.log('Yay! The app was loaded!')
 
   // example of probot responding 'Hello World' to a new issue being opened
   app.on('issues.opened', async context => {
-    
+     
      var acceptedAnswerId
     // `context` extracts information from the event, which can be passed to
     // GitHub API calls. This will return:
@@ -64,10 +65,10 @@ module.exports = (app) => {
       
       
       //undefined in Javascript?
-      
+      //Need to add in the title as the question here to get a success
       var filter = {
         pagesize: '20',
-        title: 'zzzzzzzzzzzzzzzzzzzQQQQQQQQQQQQAAAAA',
+        title: issueTitleObject,
         accepted: 'True',
         sort:'relevance',
         order:'asc'
@@ -99,9 +100,13 @@ module.exports = (app) => {
           //Need to get the assignees - maybe not necessarily the owner
           //return context.github.issues.assignee(organisationOwnerId)
           const tempParamB = context.issue()
-          app.log(tempParamB.owner)
-          const addAssigneeParams = context.issue({assignees: [tempParamB.owner]})
+          
+          //You can add more assignees by separating into a list
+          //const addAssigneeParams = context.issue({assignees: [tempParamB.owner]}) 
+          //Testing to see if you can add any random users
+          const addAssigneeParams = context.issue({assignees: ["ConnorForsyth"]})      
           //return context.github.issues.addAssignees(addAssigneeParams)
+          //Since this is a classroom - the lecturer should be able to get their github account id, along with any 
           return context.github.issues.createComment(newParams) + context.github.issues.addAssignees(addAssigneeParams)
           
         }
@@ -150,15 +155,51 @@ module.exports = (app) => {
           //console.log(results.items[topAnswerId])
           //Now we have the highest scoring answer which we will now retrieve
           acceptedAnswerId = results.items[topAnswerId].accepted_answer_id
-          console.log(acceptedAnswerId)
-          
+          //console.log(acceptedAnswerId)
+          getStackOverflowAnswer(acceptedAnswerId)
         }
         
         
       })//End of stack overflow advanced search
       
-      console.log("The accepted answer id is currently: " + acceptedAnswerId)
-    }
+      
     
+      function getStackOverflowAnswer(theAnswerId)
+      {
+        /* Now that we've successfully received the accepted answer id we can retrieve the answer
+           and then parse the body of the answer into a comment for the user to see
+        */
+        
+        /*For some unknown reason the answers method was not working with the stackexchange module
+          so have opted to use the fetch module to retrieve the answer from stackexchange instead
+        */
+        
+        //Seemingly there is an issue with the stackexchange package so will instead use a generic http request
+        const fetch = require('node-fetch')
+        
+        //First we need to setup the url to retrieve the answer from stackexchange
+        let baseUrl = "https://api.stackexchange.com/2.2/answers/"+ theAnswerId + "?order=desc&sort=activity&site=stackoverflow&filter=!9Z(-wzu0T"
+        //HTTP method being used
+        let settings = {method: "Get"}
+        
+        //Get the JSON data from stackexchange api -- atm the free licence allows for 300 calls to the api which is more than enough for prototyping        
+        fetch(baseUrl, settings)
+          .then(res => res.json())
+          .then((json)=>{
+            //app.log(json)
+            //Now that we have the json we can create the message body
+            //app.log(json.items[0].body)
+            var answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
+            //app.log(answerResponse)
+            var answerParams = context.issue({body: answerResponse})
+            app.log(answerParams)
+            return context.github.issues.createComment(answerParams)
+        })
+        
+        
+        
+      }
+    
+    } 
   })
 }
