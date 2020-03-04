@@ -8,7 +8,10 @@ module.exports = (app) => {
   // example of probot responding 'Hello World' to a new issue being opened
   app.on('issues.opened', async context => {
      
-     var acceptedAnswerId
+    let acceptedAnswerId
+    let questionId
+    let answerResponse
+    let questionResponse
     // `context` extracts information from the event, which can be passed to
     // GitHub API calls. This will return:
     //   {owner: 'yourname', repo: 'yourrepo', number: 123, body: 'Hello World!}
@@ -159,10 +162,10 @@ module.exports = (app) => {
           acceptedAnswerId = results.items[topAnswerId].accepted_answer_id
           //console.log(acceptedAnswerId)
           
-          app.log(results.items[topAnswerId])
-          
-          
-          getStackOverflowAnswer(acceptedAnswerId)
+          app.log(results.items[topAnswerId].question_id)
+          questionId = results.items[topAnswerId].question_id      
+         
+          getStackOverflowAnswer(questionId, acceptedAnswerId)
         }
         
         
@@ -170,7 +173,7 @@ module.exports = (app) => {
       
       
     
-      function getStackOverflowAnswer(theAnswerId)
+      function getStackOverflowAnswer(theQuestionId, theAnswerId)
       {
         /* Now that we've successfully received the accepted answer id we can retrieve the answer
            and then parse the body of the answer into a comment for the user to see
@@ -184,23 +187,47 @@ module.exports = (app) => {
         const fetch = require('node-fetch')
         
         //First we need to setup the url to retrieve the answer from stackexchange
-        let baseUrl = "https://api.stackexchange.com/2.2/answers/"+ theAnswerId + "?order=desc&sort=activity&site=stackoverflow&filter=!9Z(-wzu0T"
+        let questionUrl = "https://api.stackexchange.com/2.2/questions/" + theQuestionId + "?order=desc&sort=activity&site=stackoverflow&filter=!-MOiNm40DvABDyvq_C5CM_yZvkjotiuv5"
+        let answerUrl = "https://api.stackexchange.com/2.2/answers/"+ theAnswerId + "?order=desc&sort=activity&site=stackoverflow&filter=!9Z(-wzu0T"
         //HTTP method being used
         let settings = {method: "Get"}
         
+        
+        
         //Get the JSON data from stackexchange api -- atm the free licence allows for 300 calls to the api which is more than enough for prototyping        
-        fetch(baseUrl, settings)
+        fetch(questionUrl, settings)
+          .then(res => res.json())
+          .then((json)=>{
+           
+            //Now that we have the json we can create the message body
+            //app.log(json.items[0].body)
+            questionResponse = JSON.parse(JSON.stringify(json.items[0].body))
+            //app.log(questionResponse)
+            //var answerParams = context.issue({body: answerResponse})
+            //app.log(answerParams)
+            //return context.github.issues.createComment(answerParams)
+        })
+        
+        
+        //Get the JSON data from stackexchange api -- atm the free licence allows for 300 calls to the api which is more than enough for prototyping        
+        fetch(answerUrl, settings)
           .then(res => res.json())
           .then((json)=>{
             //app.log(json)
             //Now that we have the json we can create the message body
             //app.log(json.items[0].body)
-            var answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
+            app.log(questionResponse)
+            answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
+            
+            var beginResponse = "Based on your issue we have found the following answer." + "\n" + "**Context**"
+            var combinedResponses = beginResponse + questionResponse + "\n"  + answerResponse
+          
             //app.log(answerResponse)
-            var answerParams = context.issue({body: answerResponse})
+            var answerParams = context.issue({body: combinedResponses})
             //app.log(answerParams)
-            //return context.github.issues.createComment(answerParams)
+            return context.github.issues.createComment(answerParams)
         })
+        
         
         
         
