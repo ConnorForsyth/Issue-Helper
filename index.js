@@ -74,8 +74,7 @@ module.exports = (app) => {
         title: issueTitleObject,
         accepted: 'True',
         sort:'relevance',
-        order:'asc',
-        withbody: 'true'
+        order:'asc'  
       }
       
       
@@ -219,8 +218,8 @@ module.exports = (app) => {
             app.log(questionResponse)
             answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
             
-            var beginResponse = "Based on your issue we have found the following answer." + "\n" + "**Context**"
-            var combinedResponses = beginResponse + questionResponse + "\n"  + answerResponse
+            var beginResponse = "<strong><p>Based on your issue we have found the following answer.</p></strong><strong><h2>Context</h2></strong>"
+            var combinedResponses = beginResponse + questionResponse + "<br/> <strong><h2>Proposed Solution</h2></strong>"  + answerResponse
           
             //app.log(answerResponse)
             var answerParams = context.issue({body: combinedResponses})
