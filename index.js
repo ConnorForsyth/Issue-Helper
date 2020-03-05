@@ -202,9 +202,11 @@ module.exports = (app) => {
   //Here we can check whether the user still requires help
   app.on('issue_comment.created', async context => {
     
-    app.log(context.payload.comment.body)
     
-    if(context.payload.comment.body === "Yes"){
+    
+    var checkMessage = JSON.stringify(context.payload.comment.body).toLowerCase()
+    
+    if(checkMessage === "yes"){
       //Literally just add the user here - think I might make the response a function for reusability
       var notifiedMessage = "Your lecturer has been made aware and help should arrive shortly"    
       var wrapNotification = context.issue({body: notifiedMessage})
