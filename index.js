@@ -13,21 +13,11 @@ module.exports = (app) => {
     let answerResponse
     let questionResponse
     // `context` extracts information from the event, which can be passed to
-    // GitHub API calls. This will return:
-    //   {owner: 'yourname', repo: 'yourrepo', number: 123, body: 'Hello World!}
     //When referring to the event used context.payload
     var organisationOwnerId = context.payload.repository.owner.id;
     var organisationOwner = context.payload.repository.owner.login;
     var params = context.issue({body: context.payload.issue.title})
-    
-    //First we need to get the payload, then take the title, compare it with generic errors
-    //if no match, use stack exchange
-    //need to find the most generic errors that are simple fixes - ranges from missing semi-colons to incomplete declarations such as var thisVar = and leaving it empty
-    
-    //hello.js: line 10, col 19, Unexpected early end of program.
-    //potentially could have it look at the code as if it had access to it, could give read access - grab file name from error title and from there see what the offending line was
-    
-      
+ 
     //Parse the returned Github response to string - in this instance we only want the issue title
     var issueTitleObject = JSON.parse(JSON.stringify(context.payload.issue.title))
     
@@ -47,10 +37,7 @@ module.exports = (app) => {
     else
     {    
       // Post a comment on the issue
-      //Now we want to connect to stack exchange api and pass the parameters
-      //Note if this is the first time running you will need to install the relevant packages on the server
-      //npm i ajv - requirement for stack exchange api
-      //npm install stackexchange --save - node package that lets us make requests to the stack exchange api
+      //Now we want to connect to stack exchange api and pass the parameters      
       const stackexchange = require('stackexchange')
       const options = {version:2.2}
       
@@ -64,20 +51,15 @@ module.exports = (app) => {
       
       /* Problem with the filtering in that it will be very likely that returned results could be duplicate questions
          and if it is a duplicate question it is likely there is no relevant answer to the posted question  
-      */ 
+      */      
       
-      
-      //undefined in Javascript?
-      //Need to add in the title as the question here to get a success
       var filter = {
-        pagesize: '1',
+        pagesize: '10',
         title: issueTitleObject,
         accepted: 'True',
         sort:'relevance',
         order:'asc'  
       }
-      
-      
       
       //Need to filter our search specifically to stack overflow which is the site that answers programming questions
       filter.site = 'stackoverflow'      
@@ -101,12 +83,9 @@ module.exports = (app) => {
           var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified " + organisationOwner + " and help should arrive shortly"    
           var newParams = context.issue({body: changeResponse})
           //Need to get the assignees - maybe not necessarily the owner
-          //return context.github.issues.assignee(organisationOwnerId)
           const tempParamB = context.issue()
           
           //You can add more assignees by separating into a list
-          //const addAssigneeParams = context.issue({assignees: [tempParamB.owner]}) 
-          //Testing to see if you can add any random users
           const addAssigneeParams = context.issue({assignees: ["ConnorForsyth"]})      
           //return context.github.issues.addAssignees(addAssigneeParams)
           //Since this is a classroom - the lecturer should be able to get their github account id, along with any 
@@ -118,7 +97,6 @@ module.exports = (app) => {
         {
           //Successful in retrieving an answer from stackoverflow - now need to compare questions - one with most points is used  
           var count = Object.keys(results.items).length
-          //console.log(results.items)
           
           for(var i=0; i<count; i++)
           {
@@ -134,8 +112,6 @@ module.exports = (app) => {
                 {
                   topAnswerId = i 
                   topScore = results.items[i].score
-                  
-                  console.log("Current highest score is: " + topScore + " at position: " + topAnswerId)
                 }
                 else
                 {
@@ -147,23 +123,18 @@ module.exports = (app) => {
                     topAnswerId = i;
                     topScore = currentAnswerScore;
                     console.log("Current highest score is: " + topScore + " at position: " + topAnswerId)
-                  }
-                  //return context.github.issues.createComment(params)  
+                  }                  
                 }
-                
-              
-            
-            }            
-            
-          }
-          //console.log(results.items[topAnswerId])
-          //Now we have the highest scoring answer which we will now retrieve
-          acceptedAnswerId = results.items[topAnswerId].accepted_answer_id
-          //console.log(acceptedAnswerId)
-          
-          app.log(results.items[topAnswerId].question_id)
+            }         
+          }          
+          //Now we have the highest scoring answer we will keep a record of the answer id along with the question id
+          acceptedAnswerId = results.items[topAnswerId].accepted_answer_id     
           questionId = results.items[topAnswerId].question_id      
-         
+          
+          /* Calls function that will build a response to the users issue 
+             by retrieving the questions body for context and the answer to provide 
+             insight into a potential solution
+          */
           getStackOverflowAnswer(questionId, acceptedAnswerId)
         }
         
@@ -179,59 +150,57 @@ module.exports = (app) => {
         */
         
         /*For some unknown reason the answers method was not working with the stackexchange module
-          so have opted to use the fetch module to retrieve the answer from stackexchange instead
+          so have opted to use the fetch module to retrieve the answer from stackexchange instead.
+          The module hasn't been updated in over a year and it is likely that the stackexchange api
+          may have changed resulting in the issues I am having with the questions and answers functions
         */
         
         //Seemingly there is an issue with the stackexchange package so will instead use a generic http request
         const fetch = require('node-fetch')
         
         //First we need to setup the url to retrieve the answer from stackexchange
+        
+        /*These urls were retrieved from the stackexchange api documentation for more information: https://api.stackexchange.com/docs
+        */
+        
+        //To retrieve the body of the question and the accepted answer a special filter was required 
         let questionUrl = "https://api.stackexchange.com/2.2/questions/" + theQuestionId + "?order=desc&sort=activity&site=stackoverflow&filter=!-MOiNm40DvABDyvq_C5CM_yZvkjotiuv5"
         let answerUrl = "https://api.stackexchange.com/2.2/answers/"+ theAnswerId + "?order=desc&sort=activity&site=stackoverflow&filter=!9Z(-wzu0T"
-        //HTTP method being used
-        let settings = {method: "Get"}
         
+        //HTTP GET method used as we only want to retrieve information from stackexchange
+        let settings = {method: "Get"}        
         
-        
-        //Get the JSON data from stackexchange api -- atm the free licence allows for 300 calls to the api which is more than enough for prototyping        
+        /*Get the JSON data from stackexchange api
+          Currently the bot uses the free licence which allows for 300 calls to the api per day which is more than enough for prototyping 
+        */
         fetch(questionUrl, settings)
           .then(res => res.json())
           .then((json)=>{
-           
-            //Now that we have the json we can create the message body
-            //app.log(json.items[0].body)
-            questionResponse = JSON.parse(JSON.stringify(json.items[0].body))
-            //app.log(questionResponse)
-            //var answerParams = context.issue({body: answerResponse})
-            //app.log(answerParams)
-            //return context.github.issues.createComment(answerParams)
+            /* Now that we have received a response from stackexchange and received the json data we can parse 
+               the body of the question retrieved (gives us context to the answer) and store it into the global variable questionResponse
+            */
+            questionResponse = JSON.parse(JSON.stringify(json.items[0].body))           
         })
         
         
-        //Get the JSON data from stackexchange api -- atm the free licence allows for 300 calls to the api which is more than enough for prototyping        
+        //Get the JSON data from stackexchange api        
         fetch(answerUrl, settings)
           .then(res => res.json())
-          .then((json)=>{
-            //app.log(json)
-            //Now that we have the json we can create the message body
-            //app.log(json.items[0].body)
-            app.log(questionResponse)
+          .then((json)=>{            
+            //Now that we have the json we can create the message body     
             answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
             
+            //Starting message to give user context of what they will see on their issue
             var beginResponse = "<strong><p>Based on your issue we have found the following answer.</p></strong><strong><h2>Context</h2></strong>"
+            //Combine the starting message along with the question body and the answer body
             var combinedResponses = beginResponse + questionResponse + "<br/> <strong><h2>Proposed Solution</h2></strong>"  + answerResponse
-          
-            //app.log(answerResponse)
-            var answerParams = context.issue({body: combinedResponses})
-            //app.log(answerParams)
-            return context.github.issues.createComment(answerParams)
+            
+            //Setup response
+            var solutionBody = context.issue({body: combinedResponses})
+            //Create a new comment on the users issue with a proposed solution
+            return context.github.issues.createComment(solutionBody)
         })
-        
-        
-        
-        
       }
-    
     } 
   })
 }
