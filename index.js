@@ -80,16 +80,12 @@ module.exports = (app) => {
              who in this case will be the lecturer 
           */
           //As the creator won't be the same as the owner i.e. the lecturer
-          var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified " + organisationOwner + " and help should arrive shortly"    
+          // Old response - var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. We have notified " + organisationOwner + " and help should arrive shortly"    
+          var changeResponse = "We have been unsuccessful in finding a solution to the issue, you are facing. Your lecturer has been made aware and help should arrive shortly" 
           var newParams = context.issue({body: changeResponse})
-          //Need to get the assignees - maybe not necessarily the owner
-          const tempParamB = context.issue()
-          
-          //You can add more assignees by separating into a list
-          const addAssigneeParams = context.issue({assignees: ["ConnorForsyth"]})      
-          //return context.github.issues.addAssignees(addAssigneeParams)
-          //Since this is a classroom - the lecturer should be able to get their github account id, along with any 
-          return context.github.issues.createComment(newParams) + context.github.issues.addAssignees(addAssigneeParams)
+          var githubObject = context
+          //Call function that will notify user that an answer could not be found and a member of staff will help
+          notifyStaff(githubObject, newParams)
           
         }
         
@@ -210,11 +206,31 @@ module.exports = (app) => {
     
     if(context.payload.comment.body === "Yes"){
       //Literally just add the user here - think I might make the response a function for reusability
+      var notifiedMessage = "Your lecturer has been made aware and help should arrive shortly"    
+      var wrapNotification = context.issue({body: notifiedMessage})
+      
+      var githubObject = context
+      
+      notifyStaff(githubObject, wrapNotification)
     }
   
   
   })
   
+  /*As there is more than one way in which staff can be notified by the app - reusable code is better
+    As the function sits outside the context - function will not know what we are wanting to do 
+    so we have to pass in the context as a parameter
+  */
+  function notifyStaff(theContext, theMessageToUser){
+    //Need to get the assignees - maybe not necessarily the owner   
+          
+    //You can add more assignees by separating into a list
+    const addAssigneeParams = theContext.issue({assignees: ["ConnorForsyth"]})      
+    //return context.github.issues.addAssignees(addAssigneeParams)
+    //Since this is a classroom - the lecturer should be able to get their github account id, along with any 
+    return theContext.github.issues.createComment(theMessageToUser) + theContext.github.issues.addAssignees(addAssigneeParams)  
+    
+  }
   
   
 }
