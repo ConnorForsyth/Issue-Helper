@@ -5,7 +5,7 @@ module.exports = (app) => {
   
   app.log('Yay! The app was loaded!')
 
-  // example of probot responding 'Hello World' to a new issue being opened
+  //Need to update this check with a flag - i.e. issues opened with certain tag
   app.on('issues.opened', async context => {
      
     let acceptedAnswerId
@@ -121,8 +121,7 @@ module.exports = (app) => {
                   if(currentAnswerScore > topScore)
                   {
                     topAnswerId = i;
-                    topScore = currentAnswerScore;
-                    console.log("Current highest score is: " + topScore + " at position: " + topAnswerId)
+                    topScore = currentAnswerScore;                    
                   }                  
                 }
             }         
@@ -193,7 +192,7 @@ module.exports = (app) => {
             //Starting message to give user context of what they will see on their issue
             var beginResponse = "<strong><p>Based on your issue we have found the following answer.</p></strong><strong><h2>Context</h2></strong>"
             //Combine the starting message along with the question body and the answer body
-            var combinedResponses = beginResponse + questionResponse + "<br/> <strong><h2>Proposed Solution</h2></strong>"  + answerResponse
+            var combinedResponses = beginResponse + questionResponse + "<br/> <strong><h2>Proposed Solution</h2></strong>"  + answerResponse + "<br/> <strong><p>If you require further help, please respond by commenting Yes.</p></strong>"
             
             //Setup response
             var solutionBody = context.issue({body: combinedResponses})
@@ -202,5 +201,20 @@ module.exports = (app) => {
         })
       }
     } 
+  })//End of issues opened
+  
+  //Here we can check whether the user still requires help
+  app.on('issue_comment.created', async context => {
+    
+    app.log(context.payload.comment.body)
+    
+    if(context.payload.comment.body === "Yes"){
+      //Literally just add the user here - think I might make the response a function for reusability
+    }
+  
+  
   })
+  
+  
+  
 }
