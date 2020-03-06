@@ -1,5 +1,11 @@
-Welcome to Probot on Glitch
+Welcome to the Issue-Helper
 =========================
+
+This Github probot app responds to issues on user's repositories and attempts to resolve said issue. 
+
+* Please note that this app is intended to be used in conjunction with Github Classroom
+
+This app would not be possible without the free hosting provided by Glitch.com, if you would like to develop your own probot app follow the instructions provided below.
 
 This is the Glitch equivalent of running `create-probot-app` to generate a new probot app locally. Updates to your code will instantly deploy and update live.
 
@@ -25,4 +31,3 @@ That's it! Head back to the Probot [Webhook Docs](https://probot.github.io/docs/
 **Glitch** is the friendly commmunity where you'll build the app of your dreams. Glitch lets you instantly create, remix, edit, and host an app, bot or site, and you can invite collaborators or helpers to simultaneously edit code with you.
 
 Find out more [about Glitch](https://glitch.com/about).
-\ ゜o゜)ノ
