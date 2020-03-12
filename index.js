@@ -3,19 +3,20 @@ module.exports = (app) => {
  
   //The depreciation octokit error message is an issue with the probot library that will be fixed in v10 
   
-  app.log('Yay! The app was loaded!')
+  //app.log('Yay! The app was loaded!')
 
   //Need to update this check with a flag - i.e. issues opened with certain tag
   app.on('issues.opened', async context => {
      
-    let acceptedAnswerId
-    let questionId
-    let answerResponse
-    let questionResponse
+    
+    var acceptedAnswerId
+    var questionId
+    var answerResponse
+    var questionResponse
     // `context` extracts information from the event, which can be passed to
     //When referring to the event used context.payload
-    var organisationOwnerId = context.payload.repository.owner.id;
-    var organisationOwner = context.payload.repository.owner.login;
+    //var organisationOwnerId = context.payload.repository.owner.id
+    //var organisationOwner = context.payload.repository.owner.login
     var params = context.issue({body: context.payload.issue.title})
  
     //Parse the returned Github response to string - in this instance we only want the issue title
@@ -104,7 +105,7 @@ module.exports = (app) => {
             
             if(results.items[i].is_answered == true)
             {                     
-                if(i == 0)
+                if(i === 0)
                 {
                   topAnswerId = i 
                   topScore = results.items[i].score
@@ -175,26 +176,31 @@ module.exports = (app) => {
                the body of the question retrieved (gives us context to the answer) and store it into the global variable questionResponse
             */
             questionResponse = JSON.parse(JSON.stringify(json.items[0].body))           
+            getAnswerAndSendSolution(questionResponse)
         })
         
         
-        //Get the JSON data from stackexchange api        
-        fetch(answerUrl, settings)
-          .then(res => res.json())
-          .then((json)=>{            
-            //Now that we have the json we can create the message body     
-            answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
-            
-            //Starting message to give user context of what they will see on their issue
-            var beginResponse = "<strong><p>Based on your issue we have found the following answer.</p></strong><strong><h2>Context</h2></strong>"
-            //Combine the starting message along with the question body and the answer body
-            var combinedResponses = beginResponse + questionResponse + "<br/> <strong><h2>Proposed Solution</h2></strong>"  + answerResponse + "<br/> <strong><p>If you require further help, please respond by commenting Yes.</p></strong>"
-            
-            //Setup response
-            var solutionBody = context.issue({body: combinedResponses})
-            //Create a new comment on the users issue with a proposed solution
-            return context.github.issues.createComment(solutionBody)
-        })
+        //Both requests were being done simulatenously before so calling this function after
+        //the question body has been retrieved ensures the posted comment will contain both the context and solution
+        function getAnswerAndSendSolution(retrievedQuestionResponse){
+          //Get the JSON data from stackexchange api        
+          fetch(answerUrl, settings)
+            .then(res => res.json())
+            .then((json)=>{            
+              //Now that we have the json we can create the message body     
+              answerResponse = JSON.parse(JSON.stringify(json.items[0].body))
+      
+              //Starting message to give user context of what they will see on their issue
+              var beginResponse = "<strong><p>Based on your issue we have found the following answer.</p></strong><strong><h2>Context</h2></strong>"
+              //Combine the starting message along with the question body and the answer body
+              var combinedResponses = beginResponse + retrievedQuestionResponse + "<br/> <strong><h2>Proposed Solution</h2></strong>"  + answerResponse + "<br/> <strong><p>If you require further help, please respond by commenting Yes.</p></strong>"
+
+              //Setup response
+              var solutionBody = context.issue({body: combinedResponses})
+              //Create a new comment on the users issue with a proposed solution
+              return context.github.issues.createComment(solutionBody)
+          })          
+        }
       }
     } 
   })//End of issues opened
@@ -202,28 +208,32 @@ module.exports = (app) => {
   //Here we can check whether the user still requires help
   app.on('issue_comment.created', async context => {
     
-    
-    
-    var checkMessage = JSON.stringify(context.payload.comment.body).toLowerCase()
-    
-    if(checkMessage === "yes"){
+    var checkReturnedMessage = JSON.parse(JSON.stringify(context.payload.comment.body).toLowerCase());
+  
+    if(checkReturnedMessage === "yes")
+    {      
       //Literally just add the user here - think I might make the response a function for reusability
       var notifiedMessage = "Your lecturer has been made aware and help should arrive shortly"    
+      app.log(notifiedMessage)
       var wrapNotification = context.issue({body: notifiedMessage})
       
       var githubObject = context
       
+      //Notify the staff that the user still requires help
       notifyStaff(githubObject, wrapNotification)
     }
   
   
   })
   
-  /*As there is more than one way in which staff can be notified by the app - reusable code is better
+  function notifyStaff(theContext, theMessageToUser){
+    /*As there is more than one way in which staff can be notified by the app - reusable code is better
     As the function sits outside the context - function will not know what we are wanting to do 
     so we have to pass in the context as a parameter
-  */
-  function notifyStaff(theContext, theMessageToUser){
+    */
+    
+    
+    
     //Need to get the assignees - maybe not necessarily the owner   
           
     //You can add more assignees by separating into a list
