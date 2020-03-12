@@ -6,13 +6,62 @@ module.exports = (app) => {
   //app.log('Yay! The app was loaded!')
 
   //Need to update this check with a flag - i.e. issues opened with certain tag
-  app.on('issues.opened', async context => {
-     
+  app.on(['issues.opened', 'issues.edited', 'issues.labeled'], async context => {
+       
+    /*As you could assign more than one label - we will need to loop through the returned
+      object to check if the ask-the-bot label is assigned
+    */
+    var getAssignedLabels = context.payload.issue.labels
+  
+    //It is the same function that is created later on - I just don't want to break anything
+    function isObjectEmpty(obj) {
+          return !Object.keys(obj).length;
+    }
     
+    if(isObjectEmpty(getAssignedLabels))
+    {
+      //This means that the user has not requested assistance
+    }
+    else
+    {
+      //This means that the object is not empty and we can make the assumption that
+      //there will be label information
+      //Eventually all the code will sit in here instead
+      
+      var wantedKey = "name"
+      var wantedVal = "ask-the-bot"
+      var askBot = false
+      
+      function checkLabels(theLabels){
+        for(var i = 0; i < theLabels.length; i++){
+
+           if(theLabels[i].hasOwnProperty(wantedKey) && theLabels[i][wantedKey] === wantedVal) {
+             askBot = true
+             return(askBot)
+           }
+        }
+      }
+      
+      var askBotConfirmed = checkLabels(getAssignedLabels)
+      
+      if(askBotConfirmed === true)
+      {
+        app.log("It is true")
+        
+      }
+      
+      
+      
+      
+    }
+    
+    
+
     var acceptedAnswerId
     var questionId
     var answerResponse
     var questionResponse
+    
     // `context` extracts information from the event, which can be passed to
     //When referring to the event used context.payload
     //var organisationOwnerId = context.payload.repository.owner.id
