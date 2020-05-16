@@ -271,8 +271,7 @@ module.exports = (app) => {
     /*As there is more than one way in which staff can be notified by the app - reusable code is better
     As the function sits outside the context - function will not know what we are wanting to do 
     so we have to pass in the context as a parameter
-    */
-    
+    */  
     
     
     //Need to get the assignees - maybe not necessarily the owner   
